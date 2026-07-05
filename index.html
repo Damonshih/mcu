@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>特製拉霸機 - 密碼解鎖版</title>
+    <title>特製拉霸機 - 依序旋轉版</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -196,11 +196,6 @@
         const closeModalBtn = document.getElementById('close-modal');
         const errorMsg = document.getElementById('error-msg');
 
-        // 狀態管理: 
-        // 'ready_1' (第一次準備)
-        // 'played_1' (第一次結束已鎖定)
-        // 'ready_2' (第二次準備)
-        // 'played_2' (第二次結束已鎖定)
         let gameState = localStorage.getItem('slot_game_state') || 'ready_1';
 
         window.onload = () => {
@@ -234,7 +229,6 @@
             message.textContent = '旋轉中...';
             errorMsg.textContent = '';
 
-            // 隨機決定兩個不同的圖案 A 與 B
             const symbolA = symbols[Math.floor(Math.random() * symbols.length)];
             let symbolB = symbols[Math.floor(Math.random() * symbols.length)];
             while (symbolB === symbolA) {
@@ -243,11 +237,9 @@
 
             let finalResult;
             if (gameState === 'ready_1') {
-                // 第一次結果：前面兩個一樣，最後一個不一樣 [A, A, B]
                 finalResult = [symbolA, symbolA, symbolB];
                 gameState = 'played_1';
             } else if (gameState === 'ready_2') {
-                // 第二次結果：前面一個不一樣，後面兩個一樣 [B, A, A]
                 finalResult = [symbolB, symbolA, symbolA];
                 gameState = 'played_2';
             }
@@ -255,16 +247,32 @@
             localStorage.setItem('slot_game_state', gameState);
             localStorage.setItem('slot_result', JSON.stringify(finalResult));
 
+            // 修改後的「依序選轉出來」動畫邏輯
             let counter = 0;
             const spinInterval = setInterval(() => {
-                slotElements.forEach(slot => {
-                    slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-                });
                 counter++;
+                
+                // 第一個槽：轉動 10 次（1 秒）後固定
+                if (counter <= 10) {
+                    slotElements[0].textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                } else if (counter === 11) {
+                    slotElements[0].textContent = finalResult[0];
+                }
 
-                if (counter > 20) {
+                // 第二個槽：轉動 20 次（2 秒）後固定
+                if (counter <= 20) {
+                    slotElements[1].textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                } else if (counter === 21) {
+                    slotElements[1].textContent = finalResult[1];
+                }
+
+                // 第三個槽：轉動 30 次（3 秒）後固定並結束
+                if (counter <= 30) {
+                    slotElements[2].textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                } else if (counter === 31) {
+                    slotElements[2].textContent = finalResult[2];
+                    
                     clearInterval(spinInterval);
-                    showResult(finalResult);
                     
                     if (gameState === 'played_1') {
                         lockGame('就差一點點！請解鎖下一次機會。');
@@ -277,13 +285,12 @@
             }, 100);
         });
 
-        // 密碼驗證邏輯
         unlockBtn.addEventListener('click', () => {
             if (pwdInput.value === '6767') {
                 if (gameState === 'played_1') {
                     gameState = 'ready_2';
                     localStorage.setItem('slot_game_state', gameState);
-                    localStorage.removeItem('slot_result'); // 清除舊結果讓下一輪能動
+                    localStorage.removeItem('slot_result');
                     alert('密碼正確！已成功解鎖第二次機會。');
                     location.reload();
                 } else if (gameState === 'played_2') {
@@ -298,14 +305,12 @@
             }
         });
 
-        // 支援按下 Enter 鍵送出密碼
         pwdInput.addEventListener('keyup', (event) => {
             if (event.key === 'Enter') {
                 unlockBtn.click();
             }
         });
 
-        // 關閉視窗邏輯
         closeModalBtn.addEventListener('click', () => {
             modal.classList.remove('show');
             if (gameState === 'played_1') {
