@@ -2,307 +2,435 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>每日值班與交辦事項系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>24H 行動排班系統</title>
     <style>
+        /* 基礎重置與手機防縮放 */
         * {
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
-            background-color: #e9ecef;
+            background-color: #f2f2f6; /* 類似 iOS 系統背景色 */
             color: #333;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            padding: 0;
+            padding-bottom: 50px; /* 底部留白 */
         }
-        .container {
+        
+        /* 頂部固定區塊 */
+        .header {
+            position: sticky;
+            top: 0;
             background-color: #fff;
-            width: 100%;
-            max-width: 1000px; /* 加寬以容納更多備註文字 */
-            padding: 25px 35px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 1.8rem;
-        }
-        .header-controls {
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #f0f2f5;
+        }
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1c1c1e;
+            margin: 0;
         }
         .date-picker {
-            font-size: 1.2rem;
-            padding: 8px 15px;
+            font-size: 1rem;
+            padding: 8px 10px;
             border-radius: 8px;
-            border: 2px solid #bdc3c7;
-            font-weight: bold;
-            color: #2c3e50;
-            cursor: pointer;
+            border: 1px solid #c7c7cc;
+            background-color: #f2f2f6;
+            color: #1c1c1e;
+            font-weight: 600;
         }
-        .save-banner {
-            background-color: #2ecc71;
+
+        /* 儲存提示 */
+        .save-toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 205, 65, 0.9);
             color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
             opacity: 0;
+            pointer-events: none;
             transition: opacity 0.3s ease;
+            z-index: 999;
         }
-        .save-banner.show {
-            opacity: 1;
+        .save-toast.show { opacity: 1; }
+
+        /* 列表區塊 */
+        .list-container {
+            margin: 15px;
+            background-color: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px; /* 讓每一行稍微分開，畫面更乾淨 */
-            margin-top: 10px;
-        }
-        th {
-            background-color: #34495e;
-            color: white;
+        .slot-row {
+            display: flex;
+            align-items: center;
             padding: 12px 15px;
-            text-align: left;
-            border-radius: 4px;
+            border-bottom: 1px solid #e5e5ea;
         }
-        td {
-            padding: 10px 15px;
-            background-color: #f8f9fa;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
+        .slot-row:last-child {
+            border-bottom: none;
         }
-        td:first-child {
-            border-left: 1px solid #eee;
-            border-radius: 8px 0 0 8px;
+
+        /* 1. 時間區 */
+        .time-col {
+            width: 50px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        .time-text {
             font-size: 1.1rem;
-            color: #2c3e50;
+            font-weight: 700;
+            color: #8e8e93;
         }
-        td:last-child {
-            border-right: 1px solid #eee;
-            border-radius: 0 8px 8px 0;
+        .time-sub {
+            font-size: 0.7rem;
+            color: #aeaeb2;
+            margin-top: 2px;
         }
-        tr:hover td {
-            background-color: #fdfdfe;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+
+        /* 2. 負責人選單區 */
+        .person-col {
+            flex-grow: 1;
+            margin: 0 15px;
         }
-        
-        /* 選擇人員的樣式 */
         select.duty-select {
             width: 100%;
-            padding: 10px;
-            font-size: 1.05rem;
-            border-radius: 6px;
-            border: 2px solid #e0e0e0;
-            background-color: #fff;
-            cursor: pointer;
+            padding: 12px;
+            font-size: 1.15rem; /* 字體放大，方便手機看與點擊 */
+            font-weight: 600;
+            color: #000;
+            background-color: #f2f2f6;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            appearance: none; /* 隱藏原生箭頭 */
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238e8e93%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px top 50%;
+            background-size: 12px auto;
         }
         select.duty-select:focus {
-            border-color: #3498db;
             outline: none;
+            border-color: #007aff;
+            background-color: #fff;
+        }
+        /* 當有選擇人時的顏色 */
+        select.duty-select.has-value {
+            background-color: #e5f1ff;
+            color: #007aff;
         }
 
-        /* 備註欄位的樣式優化 */
-        .note-container {
-            position: relative;
+        /* 3. 備註按鈕區 */
+        .note-col {
+            width: 45px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
         }
-        textarea.note-input {
+        .note-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .note-btn.empty {
+            background-color: #e5e5ea;
+            color: #8e8e93;
+        }
+        .note-btn.filled {
+            background-color: #ff9500; /* 亮橘色代表有備註 */
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 149, 0, 0.4);
+            animation: pop 0.3s ease;
+        }
+
+        /* 彈出視窗 (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end; /* 手機版通常從下方彈出較好按 */
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-content {
+            background: #fff;
             width: 100%;
-            padding: 10px 12px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-title { margin: 0; font-size: 1.2rem; font-weight: bold; }
+        .close-btn {
+            background: #f2f2f6;
+            border: none;
+            width: 30px; height: 30px;
+            border-radius: 15px;
             font-size: 1rem;
-            border-radius: 6px;
-            border: 2px solid #e0e0e0;
-            background-color: #fffaf0; /* 微暖色背景，突顯這區是提醒事項 */
-            resize: vertical; /* 允許垂直拉長 */
-            min-height: 45px;
-            transition: all 0.2s;
-            font-family: inherit;
+            font-weight: bold;
+            color: #8e8e93;
         }
-        textarea.note-input::placeholder {
-            color: #aaa;
-            font-style: italic;
+        .modal-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            border: 1px solid #c7c7cc;
+            resize: none;
+            background: #fafafa;
         }
-        textarea.note-input:focus {
-            border-color: #e67e22; /* 聚焦時變成橘色警示感 */
-            background-color: #fff;
+        .modal-textarea:focus {
             outline: none;
-            min-height: 80px; /* 點擊後自動長高方便輸入 */
+            border-color: #ff9500;
+            background: #fff;
         }
-        /* 當有輸入內容時，邊框保持較深顏色 */
-        textarea.note-input.has-content {
-            border-color: #e67e22;
-            background-color: #fff;
+        .save-modal-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
         }
 
+        @keyframes pop { 50% { transform: scale(1.1); } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>📋 每日值班與交辦事項表</h1>
-    
-    <div class="header-controls">
-        <div>
-            <label for="datePicker" style="font-size: 1.2rem; margin-right: 10px;">📅 <strong>選擇日期：</strong></label>
-            <input type="date" id="datePicker" class="date-picker">
-        </div>
-        <div id="saveBanner" class="save-banner">✓ 變更已自動儲存</div>
-    </div>
+<!-- 頂部選單 -->
+<div class="header">
+    <h1 class="header-title">📋 班表</h1>
+    <input type="date" id="datePicker" class="date-picker">
+</div>
 
-    <table>
-        <thead>
-            <tr>
-                <th width="15%">時間段</th>
-                <th width="20%">負責人</th>
-                <th width="65%">⚠️ 交辦事項 / 特別注意 (點擊展開輸入)</th>
-            </tr>
-        </thead>
-        <tbody id="scheduleBody">
-            <!-- JavaScript 會在這裡生成時段 -->
-        </tbody>
-    </table>
+<div id="saveToast" class="save-toast">✓ 已儲存</div>
+
+<!-- 24小時列表 -->
+<div class="list-container" id="scheduleList">
+    <!-- JS 動態生成 -->
+</div>
+
+<!-- 備註彈出視窗 -->
+<div class="modal-overlay" id="noteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">交辦事項</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+        </div>
+        <textarea id="modalTextarea" class="modal-textarea" placeholder="請輸入需要注意的事項..."></textarea>
+        <button class="save-modal-btn" onclick="saveModalNote()">完成並儲存</button>
+    </div>
 </div>
 
 <script>
     const staffOptions = ["", "翁耀男", "翁耀賜", "翁瀅麗", "翁雪萍", "翁婉玲"];
-    const timeSlots = [
-        "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00",
-        "12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00",
-        "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", "19:00 - 20:00",
-        "20:00 - 21:00", "21:00 - 22:00"
-    ];
-
+    const scheduleList = document.getElementById('scheduleList');
     const datePicker = document.getElementById('datePicker');
-    const scheduleBody = document.getElementById('scheduleBody');
-    const saveBanner = document.getElementById('saveBanner');
-    let saveTimeout;
+    const saveToast = document.getElementById('saveToast');
+    
+    // Modal 相關元素
+    const noteModal = document.getElementById('noteModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalTextarea = document.getElementById('modalTextarea');
+    let currentEditIndex = null; // 記錄現在正在編輯哪一個時段的備註
+    
+    let toastTimeout;
+    
+    // 記憶體中暫存當天所有的備註資料，避免頻繁讀取 localStorage
+    let currentDayNotes = {};
 
     window.onload = () => {
+        // 預設今天日期
         const today = new Date();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         datePicker.value = `${year}-${month}-${day}`;
         
-        buildTable();
+        buildList();
         loadDateData();
     };
 
     datePicker.addEventListener('change', loadDateData);
 
-    function buildTable() {
-        scheduleBody.innerHTML = '';
+    // 建立 24 小時列表
+    function buildList() {
+        scheduleList.innerHTML = '';
         
-        timeSlots.forEach((slot, index) => {
-            const tr = document.createElement('tr');
+        for(let i = 0; i < 24; i++) {
+            const startHour = String(i).padStart(2, '0');
+            const endHour = String((i + 1) % 24).padStart(2, '0');
             
-            // 時間
-            const tdTime = document.createElement('td');
-            tdTime.innerHTML = `<strong>${slot}</strong>`;
+            const row = document.createElement('div');
+            row.className = 'slot-row';
             
-            // 負責人
-            const tdSelect = document.createElement('td');
+            // 1. 時間
+            const timeCol = document.createElement('div');
+            timeCol.className = 'time-col';
+            timeCol.innerHTML = `
+                <div class="time-text">${startHour}</div>
+                <div class="time-sub">~${endHour}</div>
+            `;
+            
+            // 2. 負責人選單
+            const personCol = document.createElement('div');
+            personCol.className = 'person-col';
             const select = document.createElement('select');
             select.className = 'duty-select';
-            select.dataset.index = index;
+            select.dataset.index = i;
             
             staffOptions.forEach(name => {
                 const option = document.createElement('option');
                 option.value = name;
-                option.textContent = name === "" ? "-- 選擇人員 --" : name;
+                option.textContent = name === "" ? "選取人員..." : name;
                 select.appendChild(option);
             });
-            select.addEventListener('change', saveData);
-            tdSelect.appendChild(select);
             
-            // 備註 (改成 Textarea)
-            const tdNote = document.createElement('td');
-            const noteContainer = document.createElement('div');
-            noteContainer.className = 'note-container';
-            
-            const textarea = document.createElement('textarea');
-            textarea.className = 'note-input';
-            textarea.placeholder = '例如：打電話聯絡廠商、檢查冷氣濾網...';
-            textarea.dataset.index = index;
-            textarea.rows = 1; 
-            
-            // 監聽輸入：自動存檔 + 檢查是否有內容以改變樣式
-            textarea.addEventListener('input', function() {
-                checkNoteContent(this);
+            // 選擇改變時：更新顏色 & 存檔
+            select.addEventListener('change', function() {
+                if(this.value !== "") this.classList.add('has-value');
+                else this.classList.remove('has-value');
                 saveData();
             });
+            personCol.appendChild(select);
             
-            noteContainer.appendChild(textarea);
-            tdNote.appendChild(noteContainer);
+            // 3. 備註按鈕
+            const noteCol = document.createElement('div');
+            noteCol.className = 'note-col';
+            const noteBtn = document.createElement('button');
+            noteBtn.className = 'note-btn empty';
+            noteBtn.id = `noteBtn_${i}`;
+            noteBtn.innerHTML = '➕'; // 預設空備註圖示
+            noteBtn.onclick = () => openModal(i, startHour, endHour);
+            noteCol.appendChild(noteBtn);
             
-            tr.appendChild(tdTime);
-            tr.appendChild(tdSelect);
-            tr.appendChild(tdNote);
-            scheduleBody.appendChild(tr);
-        });
-    }
-
-    // 檢查備註是否有內容，如果有就加上特定 class 讓框線變色
-    function checkNoteContent(textarea) {
-        if (textarea.value.trim() !== "") {
-            textarea.classList.add('has-content');
-        } else {
-            textarea.classList.remove('has-content');
+            row.appendChild(timeCol);
+            row.appendChild(personCol);
+            row.appendChild(noteCol);
+            scheduleList.appendChild(row);
         }
     }
 
+    // 載入日期資料
     function loadDateData() {
         const selectedDate = datePicker.value;
         if (!selectedDate) return;
 
-        const savedData = JSON.parse(localStorage.getItem(`duty_tasks_${selectedDate}`)) || {};
+        const savedData = JSON.parse(localStorage.getItem(`duty_24h_${selectedDate}`)) || {};
+        currentDayNotes = {}; // 重置暫存
+
         const selects = document.querySelectorAll('.duty-select');
-        const textareas = document.querySelectorAll('.note-input');
 
-        selects.forEach(select => {
-            const idx = select.dataset.index;
-            select.value = savedData[idx]?.person || "";
-        });
+        for(let i = 0; i < 24; i++) {
+            // 載入選擇的人員
+            const person = savedData[i]?.person || "";
+            selects[i].value = person;
+            if(person !== "") selects[i].classList.add('has-value');
+            else selects[i].classList.remove('has-value');
 
-        textareas.forEach(textarea => {
-            const idx = textarea.dataset.index;
-            textarea.value = savedData[idx]?.note || "";
-            // 載入資料後，也要檢查一下樣式
-            checkNoteContent(textarea);
-        });
+            // 載入備註並更新按鈕樣式
+            const note = savedData[i]?.note || "";
+            currentDayNotes[i] = note; 
+            updateNoteButton(i, note);
+        }
     }
 
+    // 更新備註按鈕外觀
+    function updateNoteButton(index, text) {
+        const btn = document.getElementById(`noteBtn_${index}`);
+        if(text.trim() !== "") {
+            btn.className = 'note-btn filled';
+            btn.innerHTML = '📝'; // 有備註變亮橘色 + 筆記本圖示
+        } else {
+            btn.className = 'note-btn empty';
+            btn.innerHTML = '➕'; // 沒備註變灰色加號
+        }
+    }
+
+    // 開啟備註彈窗
+    function openModal(index, startHour, endHour) {
+        currentEditIndex = index;
+        modalTitle.innerText = `${startHour}:00 - ${endHour}:00 交辦事項`;
+        modalTextarea.value = currentDayNotes[index] || "";
+        noteModal.classList.add('active');
+        modalTextarea.focus(); // 自動對焦輸入框
+    }
+
+    // 關閉彈窗
+    function closeModal() {
+        noteModal.classList.remove('active');
+        currentEditIndex = null;
+    }
+
+    // 在彈窗內點擊「完成」
+    function saveModalNote() {
+        if(currentEditIndex !== null) {
+            const noteText = modalTextarea.value;
+            currentDayNotes[currentEditIndex] = noteText; // 更新暫存
+            updateNoteButton(currentEditIndex, noteText); // 更新按鈕顏色
+            saveData(); // 實際寫入 localStorage
+            closeModal();
+        }
+    }
+
+    // 儲存全部資料到 LocalStorage
     function saveData() {
         const selectedDate = datePicker.value;
         if (!selectedDate) return;
 
         const savedData = {};
         const selects = document.querySelectorAll('.duty-select');
-        const textareas = document.querySelectorAll('.note-input');
 
-        timeSlots.forEach((_, index) => {
-            savedData[index] = {
-                person: selects[index].value,
-                note: textareas[index].value
+        for(let i = 0; i < 24; i++) {
+            savedData[i] = {
+                person: selects[i].value,
+                note: currentDayNotes[i] || "" // 從暫存抓備註
             };
-        });
+        }
 
-        localStorage.setItem(`duty_tasks_${selectedDate}`, JSON.stringify(savedData));
-        showSaveBanner();
+        localStorage.setItem(`duty_24h_${selectedDate}`, JSON.stringify(savedData));
+        showToast();
     }
 
-    function showSaveBanner() {
-        saveBanner.classList.add('show');
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => {
-            saveBanner.classList.remove('show');
+    // 顯示「已儲存」小提示
+    function showToast() {
+        saveToast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            saveToast.classList.remove('show');
         }, 1500);
     }
 </script>
