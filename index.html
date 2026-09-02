@@ -484,13 +484,13 @@
               <div class="pair-label">尚未抽出</div>
               <div class="person">
                 <div class="left">
-                  <div class="role">學長姐</div>
+                  <div class="role">學弟妹</div>
                   <div class="name">等待抽籤</div>
                   <div class="sid">—</div>
                 </div>
-                <div class="arrow">↔</div>
+                <div class="arrow">→</div>
                 <div class="left right">
-                  <div class="role">學弟妹</div>
+                  <div class="role">學長姐</div>
                   <div class="name">等待抽籤</div>
                   <div class="sid">—</div>
                 </div>
@@ -526,8 +526,8 @@
                 <thead>
                   <tr>
                     <th style="width:72px;">序號</th>
-                    <th>學長姐</th>
                     <th>學弟妹</th>
+                    <th>學長姐</th>
                     <th style="width:110px;">狀態</th>
                   </tr>
                 </thead>
@@ -547,7 +547,7 @@
       <div class="modal-top">
         <div>
           <h3>資料設定</h3>
-          <p>修改名單後按儲存即可。</p>
+          <p>修改名單後按儲存即可。學弟妹會依學號排序依序上台抽。</p>
         </div>
         <button class="btn btn-outline" id="closeSettingsBtn">關閉</button>
       </div>
@@ -584,8 +584,8 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const STORAGE_KEY = "draw-zhishu-data-v2";
-    const PROGRESS_KEY = "draw-zhishu-progress-v2";
+    const STORAGE_KEY = "draw-zhishu-data-v3";
+    const PROGRESS_KEY = "draw-zhishu-progress-v3";
 
     const defaultSeniors = [
       "41000123,王小明,2",
@@ -680,33 +680,32 @@
       return result;
     }
 
+    function sortByStudentId(list){
+      return [...list].sort((a, b) =>
+        a.id.localeCompare(b.id, "zh-Hant", { numeric: true })
+      );
+    }
+
     function buildPairs(seniors, juniors){
       const totalCapacity = seniors.reduce((sum, s) => sum + s.capacity, 0);
       if(juniors.length > totalCapacity){
         throw new Error(`學弟妹 ${juniors.length} 人，目前總可帶人數只有 ${totalCapacity}`);
       }
 
+      const orderedJuniors = sortByStudentId(juniors);
       const shuffledSeniors = shuffle(seniors);
-      const shuffledJuniors = shuffle(juniors);
-      const pairs = [];
-      let j = 0;
 
-      for(let i = 0; i < shuffledSeniors.length && j < shuffledJuniors.length; i++){
-        pairs.push({ senior: shuffledSeniors[i], junior: shuffledJuniors[j++] });
-      }
+      const slots = [];
+      shuffledSeniors.forEach(s => {
+        for(let k = 0; k < s.capacity; k++) slots.push(s);
+      });
 
-      if(j < shuffledJuniors.length){
-        const extras = [];
-        shuffledSeniors.forEach(s => {
-          for(let k = 1; k < s.capacity; k++) extras.push(s);
-        });
-        const shuffledExtras = shuffle(extras);
-        while(j < shuffledJuniors.length){
-          const extraSenior = shuffledExtras.shift();
-          if(!extraSenior) throw new Error("可多帶的學長姐不足");
-          pairs.push({ senior: extraSenior, junior: shuffledJuniors[j++] });
-        }
-      }
+      const shuffledSlots = shuffle(slots);
+
+      const pairs = orderedJuniors.map((junior, idx) => ({
+        junior,
+        senior: shuffledSlots[idx]
+      }));
 
       return pairs;
     }
@@ -777,13 +776,13 @@
           <div class="pair-label">尚未抽出</div>
           <div class="person">
             <div class="left">
-              <div class="role">學長姐</div>
+              <div class="role">學弟妹</div>
               <div class="name">等待抽籤</div>
               <div class="sid">—</div>
             </div>
-            <div class="arrow">↔</div>
+            <div class="arrow">→</div>
             <div class="left right">
-              <div class="role">學弟妹</div>
+              <div class="role">學長姐</div>
               <div class="name">等待抽籤</div>
               <div class="sid">—</div>
             </div>
@@ -803,15 +802,15 @@
         <div class="pair-label">第 ${appData.revealedIndex} 組抽籤結果</div>
         <div class="person">
           <div class="left">
-            <div class="role">學長姐</div>
-            <div class="name">${escapeHtml(pair.senior.name)}</div>
-            <div class="sid">${escapeHtml(pair.senior.id)}</div>
-          </div>
-          <div class="arrow">↔</div>
-          <div class="left right">
             <div class="role">學弟妹</div>
             <div class="name">${escapeHtml(pair.junior.name)}</div>
             <div class="sid">${escapeHtml(pair.junior.id)}</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="left right">
+            <div class="role">學長姐</div>
+            <div class="name">${escapeHtml(pair.senior.name)}</div>
+            <div class="sid">${escapeHtml(pair.senior.id)}</div>
           </div>
         </div>
         ${showExtra ? `<div class="extra-badge">多帶一位</div>` : `<div id="extraBadgeArea"></div>`}
@@ -839,8 +838,8 @@
         return `
           <tr>
             <td>${index + 1}</td>
-            <td>${escapeHtml(pair.senior.name)}<br><span style="color:#6b7d93">${escapeHtml(pair.senior.id)}</span></td>
             <td>${escapeHtml(pair.junior.name)}<br><span style="color:#6b7d93">${escapeHtml(pair.junior.id)}</span></td>
+            <td>${escapeHtml(pair.senior.name)}<br><span style="color:#6b7d93">${escapeHtml(pair.senior.id)}</span></td>
             <td>${extra}</td>
           </tr>
         `;
