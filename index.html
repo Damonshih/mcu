@@ -1,0 +1,57 @@
+<!DOCTYPE html>                                            <!-- 宣告這是一份 HTML5 文件 -->
+<html lang="zh-Hant">                                       <!-- 網頁根元素，語言設為繁體中文 -->
+<head>                                                       <!-- 頭部區塊，放設定資料 -->
+<meta charset="UTF-8">                                      <!-- 文字編碼設定為 UTF-8，避免中文亂碼 -->
+<title>費氏數列與明天時間</title>                            <!-- 瀏覽器分頁標題 -->
+<style>                                                      <!-- CSS 樣式開始 -->
+  body{font-family:"微軟正黑體",Arial,sans-serif;max-width:600px;margin:40px auto;text-align:center}
+  /* 上面這行：字型設定、內容最寬 600px、置中對齊、文字置中顯示 */
+  button{background:#6b46c1;color:#fff;border:none;padding:12px 24px;margin:10px;border-radius:6px;font-size:1em;cursor:pointer}
+  /* 上面這行：按鈕紫底白字、無邊框、內距、圓角、滑鼠移上去變手指 */
+  button:hover{background:#553396}                          /* 滑鼠移到按鈕上時顏色變深 */
+  #output{margin-top:20px;font-size:1.1em;white-space:pre-line;color:#333}
+  /* 上面這行：結果顯示區塊字體稍大，換行符號會真的換行，文字深灰色 */
+</style>                                                      <!-- CSS 樣式結束 -->
+</head>                                                       <!-- head 結束 -->
+<body>                                                        <!-- body 開始，畫面內容從這裡開始 -->
+
+<h1>JavaScript 練習</h1>                                     <!-- 頁面主標題 -->
+
+<button onclick="showFibonacci()">印出費氏數列 f0~f10</button>
+<!-- 上面這行：第一個按鈕，按下去會執行 showFibonacci() 這個 function -->
+<button onclick="showTomorrow()">印出明天的這個時間</button>
+<!-- 上面這行：第二個按鈕，按下去會執行 showTomorrow() 這個 function -->
+
+<div id="output"></div>                                       <!-- 空容器，結果會用 JS 寫進這裡 -->
+
+<script>                                                       <!-- JavaScript 程式開始 -->
+function fibonacci(n) {                                        // 定義計算費氏數列的 function，n 是要算到第幾項
+  const seq = [0, 1];                                            // 陣列存放結果，先放好第 0 項和第 1 項
+  for (let i = 2; i <= n; i++) {                                 // 從第 2 項開始算，一路算到第 n 項
+    seq[i] = seq[i - 1] + seq[i - 2];                            // 這一項 = 前一項加前兩項
+  }                                                                // for 迴圈結束
+  return seq.slice(0, n + 1);                                     // 回傳從第 0 項到第 n 項的陣列
+}                                                                  // function 結束
+
+function showFibonacci() {                                        // 定義按下第一個按鈕要執行的 function
+  const seq = fibonacci(10);                                       // 呼叫 fibonacci，算到第 10 項，結果存到 seq
+  document.getElementById("output").textContent =                 // 把結果寫進畫面上的 output 區塊
+    "費氏數列 f0 ~ f10：\n" + seq.join(", ");                      // 標題加上用逗號接起來的數列字串
+}                                                                  // function 結束
+
+function showTomorrow() {                                         // 定義按下第二個按鈕要執行的 function
+  const now = new Date();                                          // 建立代表「現在時刻」的 Date 物件
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);  // 現在的毫秒數加一天的毫秒數，得到明天同一刻
+  const formatted = tomorrow.getFullYear() + "/" +                 // 取出年份，開始組合日期字串
+    String(tomorrow.getMonth() + 1).padStart(2, "0") + "/" +       // 月份要 +1（JS 月份從 0 算起），不足兩位補 0
+    String(tomorrow.getDate()).padStart(2, "0") + " " +            // 取出日期，不足兩位補 0
+    String(tomorrow.getHours()).padStart(2, "0") + ":" +           // 取出小時，不足兩位補 0
+    String(tomorrow.getMinutes()).padStart(2, "0") + ":" +         // 取出分鐘，不足兩位補 0
+    String(tomorrow.getSeconds()).padStart(2, "0");                // 取出秒數，不足兩位補 0
+  document.getElementById("output").textContent = "明天的這個時間：" + formatted;
+  // 上面這行：把組好的日期時間字串寫進畫面上的 output 區塊
+}                                                                    // function 結束
+</script>                                                             <!-- JavaScript 程式結束 -->
+
+</body>                                                               <!-- body 結束 -->
+</html>                                                               <!-- 整份 HTML 文件結束 -->
