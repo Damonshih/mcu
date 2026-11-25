@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>社團座位表</title>
+<style>
+*{box-sizing:border-box}body{font-family:system-ui,"Noto Sans TC",sans-serif;margin:0;background:#f4f6f9;color:#222}
+header{background:#2f4b7c;color:#fff;padding:12px 16px;position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:18px;margin:0;flex:1 1 100%}
+.stat{background:#ffffff22;border-radius:8px;padding:4px 10px;font-size:14px}
+button.reset{margin-left:auto;background:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer}
+main{padding:12px;max-width:1100px;margin:auto}
+.zone-title{font-weight:700;margin:14px 0 6px;padding:4px 10px;border-radius:6px;display:inline-block}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.col{display:flex;flex-direction:column;gap:10px}
+.pc{border:2px solid #444;border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px}
+.pc.top{background:#FCE4D6}.pc.L{background:#DDEBF7}.pc.R{background:#E4DFEC}.pc.M{background:#FFF2CC}
+.p{display:flex;align-items:center;gap:6px;background:#fff8;border-radius:8px;padding:6px}
+.p .n{flex:1;font-size:15px}.p .n b{display:inline-block;min-width:24px}
+.p.late .n{color:#c00}
+.t{border:2px solid #888;background:#fff;border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;min-width:52px}
+.t.on{background:#34a853;border-color:#34a853;color:#fff}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.box{background:#fff;border-radius:10px;padding:10px 14px}.box h3{margin:0 0 6px}
+.box li{line-height:1.7}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.row{grid-template-columns:1fr}.lists{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>社團座位表</h1>
+<span class="stat" id="s1"></span><span class="stat" id="s2"></span>
+<button class="reset" onclick="resetAll()">全部重設</button></header>
+<main>
+<div class="zone-title" style="background:#F4B084">橫排 11–15</div><div class="row" id="top"></div>
+<div class="cols">
+<div><div class="zone-title" style="background:#9DC3E6">左側直排 1–10</div><div class="col" id="L"></div></div>
+<div><div class="zone-title" style="background:#FFD966">中間 31–32</div><div class="col" id="M"></div></div>
+<div><div class="zone-title" style="background:#B4A7D6">右側直排 17–26</div><div class="col" id="R"></div></div>
+</div>
+<div class="lists"><div class="box"><h3>還沒到</h3><ul id="l1"></ul></div><div class="box"><h3>還沒完成</h3><ul id="l2"></ul></div></div>
+</main>
+<script>
+const Z={
+top:[[[11,"503 李立騰"],[12,"503 劉芯佑"]],[[13,"503 楊承恩"],[14,"403 劉芯辰"]],[[15,"501 黃翊豪"]]],
+L:[[[10,"502 鄧佐謙"],[9,"502 林亞蓎"]],[[8,"501 李灃訓"],[7,"501 梁立忞"]],[[5,"503 吳垣諾"]],[[4,"604 戴睿漢"],[3,"503 徐維謙"]],[[2,"503 楊巧眸"],[1,"604 林士均"]]],
+M:[[[31,"504 劉宥辰"],[32,"504 李良昱"]]],
+R:[[[17,"602 張詠翔"]],[[19,"502 吳昕嬡"],[20,"501 張育承"]],[[22,"402 鐘名宣"]],[[23,"404 吳朗尼"],[24,"404 李協叡"]],[[25,"403 江彥熹"],[26,"503 劉思妘"]]]};
+const KEY="club-seat-v1";let S=JSON.parse(localStorage.getItem(KEY)||"{}");
+const all=[];Object.values(Z).forEach(z=>z.forEach(pc=>pc.forEach(p=>all.push(p))));
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+function tog(id,f){S[id]=S[id]||{};S[id][f]=!S[id][f];save();render()}
+function resetAll(){if(confirm("確定全部重設？")){S={};save();render()}}
+function render(){
+ for(const k in Z){const el=document.getElementById(k);el.innerHTML="";
+  Z[k].forEach(pc=>{const d=document.createElement("div");d.className="pc "+(k=="top"?"top":k);
+   pc.forEach(([id,nm])=>{const s=S[id]||{};const p=document.createElement("div");p.className="p"+(s.a?"":" late");
+    p.innerHTML=`<span class="n"><b>${id}</b> ${nm}</span><button class="t ${s.a?"on":""}" onclick="tog(${id},'a')">${s.a?"✔ ":""}到</button><button class="t ${s.d?"on":""}" onclick="tog(${id},'d')">${s.d?"✔ ":""}完成</button>`;
+    d.appendChild(p)});el.appendChild(d)})}
+ const na=all.filter(([i])=>!(S[i]||{}).a),nd=all.filter(([i])=>!(S[i]||{}).d);
+ s1.textContent=`已到 ${all.length-na.length}/${all.length}`;s2.textContent=`已完成 ${all.length-nd.length}/${all.length}`;
+ const f=a=>a.map(([i,n])=>`<li>${i} ${n}</li>`).join("")||"<li>🎉 全部完成</li>";
+ l1.innerHTML=f(na);l2.innerHTML=f(nd)}
+render();
+</script></body></html>
